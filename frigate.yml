@@ -1,0 +1,247 @@
+mqtt:
+  host: 172.18.0.3
+  topic_prefix: frigate/events
+
+detectors:
+  cpu1:
+    type: cpu
+    num_threads: 4
+  cpu2:
+    type: cpu
+    num_threads: 4
+  cpu3:
+    type: cpu
+    num_threads: 4
+  cpu4:
+    type: cpu
+    num_threads: 4
+
+ffmpeg:
+  hwaccel_args: preset-vaapi
+
+birdseye:
+  enabled: True
+  mode: continuous
+# quality: 3
+
+record:
+  enabled: True
+  retain:
+    days: 10
+    mode: motion
+  events:
+    pre_capture: 10
+    post_capture: 10
+    retain:
+      default: 14
+      mode: active_objects
+
+snapshots:
+  enabled: True
+  timestamp: False
+  bounding_box: True
+  crop: False
+  retain:
+    default: 20
+
+#motion:
+  # Optional: The threshold passed to cv2.threshold to determine if a pixel is different enough to be counted as motion. (default: shown below)
+  # Increasing this value will make motion detection less sensitive and decreasing it will make motion detection more sensitive.
+  # The value should be between 1 and 255.
+  # threshold: 25
+  # Optional: Minimum size in pixels in the resized motion image that counts as motion (default: 30)
+  # Increasing this value will prevent smaller areas of motion from being detected. Decreasing will
+  # make motion detection more sensitive to smaller moving objects.
+  # As a rule of thumb:
+  #  - 15 - high sensitivity
+  #  - 30 - medium sensitivity
+  #  - 50 - low sensitivity
+#   contour_area: 40
+  # Optional: Alpha value passed to cv2.accumulateWeighted when averaging the motion delta across multiple frames (default: shown below)
+  # Higher values mean the current frame impacts the delta a lot, and a single raindrop may register as motion.
+  # Too low and a fast moving person wont be detected as motion.
+#  delta_alpha: 0.2
+  # Optional: Alpha value passed to cv2.accumulateWeighted when averaging frames to determine the background (default: shown below)
+  # Higher values mean the current frame impacts the average a lot, and a new object will be averaged into the background faster.
+  # Low values will cause things like moving shadows to be detected as motion for longer.
+  # https://www.geeksforgeeks.org/background-subtraction-in-an-image-using-concept-of-running-average/
+#  frame_alpha: 0.2
+  # Optional: Height of the resized motion frame  (default: 50)
+  # This operates as an efficient blur alternative. Higher values will result in more granular motion detection at the expense
+  # of higher CPU usage. Lower values result in less CPU, but small changes may not register as motion.
+#  frame_height: 50
+  # Optional: motion mask
+  # NOTE: see docs for more detailed info on creating masks
+# mask: 0,900,1080,900,1080,1920,0,1920
+  # Optional: improve contrast (default: shown below)
+  # Enables dynamic contrast improvement. This should help improve night detections at the cost of making motion detection more sensitive
+  # for daytime.
+#   improve_contrast: True
+  # Optional: Delay when updating camera motion through MQTT from ON -> OFF (default: shown below).
+#  mqtt_off_delay: 30
+
+detect:
+  width: 768
+  height: 432
+#  fps: 5
+#  enabled: True
+#  max_disappeared: 25
+
+########
+
+go2rtc:
+  streams:
+    entrada:
+      - rtsp://admin:YVWMOA@192.168.10.101:554/Streaming/Channels/101
+    entrada_sub:
+      - rtsp://admin:YVWMOA@192.168.10.101:554/Streaming/Channels/102
+    patio:
+      - rtsp://admin:JHAQOG@192.168.10.102:554/Streaming/Channels/101
+    patio_sub:
+      - rtsp://admin:JHAQOG@192.168.10.102:554/Streaming/Channels/102
+
+################
+
+cameras:
+
+  entrada:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/entrada_sub?video=copy
+          roles:
+            - detect
+        - path: rtsp://127.0.0.1:8554/entrada?video=copy
+          roles:
+            - record
+      hwaccel_args:
+        -hwaccel vaapi
+        -hwaccel_device /dev/dri/renderD128
+
+    objects:
+      track:
+        - person
+        - cat
+        - dog
+        - bicycle
+
+    motion:
+      mask:
+        - 517,0,509,22,480,27,456,35,440,21,438,0
+        - 768,0,768,45,711,67,657,72,627,70,585,54,547,44,535,23,528,0
+
+    zones:
+       zone_sens:
+         coordinates: 0,432,486,432,286,0,0,0
+         filters:
+           person:
+             min_area: 3500
+             max_area: 33000
+             threshold: 0.7
+             min_score: 0.1
+           dog:
+             threshold: 0.7
+             max_area: 25000
+           cat:
+             threshold: 0.7
+             max_area: 5000
+       zone_calle:
+         coordinates: 487,432,768,432,768,0,287,0
+         filters:
+          person:
+            max_area: 25000
+            threshold: 0.6
+#            min_score: 0.4
+          dog:
+             max_area: 10000
+             threshold: 0.8
+#             min_score: 0.2
+          cat:
+             max_area: 5000
+             threshold: 0.8
+
+############
+
+  patio:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/patio_sub?video=copy
+          roles:
+            - detect
+        - path: rtsp://127.0.0.1:8554/patio?video=copy
+          roles:
+            - record
+      hwaccel_args:
+        -hwaccel vaapi
+        -hwaccel_device /dev/dri/renderD128
+
+    objects:
+      track:
+        - person
+        - cat
+#        - dog
+
+    motion:
+      mask:
+        - 194,388,194,432,31,432,28,390
+        - 384,7,0,25,0,0,768,0,768,50
+
+    zones:
+      zona_garage:
+        coordinates: 557,259,702,306,735,106,582,54
+        filters:
+           person:
+             min_area: 550
+             max_area: 7800
+             min_ratio: 0.5
+             max_ratio: 1.0
+             threshold: 0.4
+           dog:
+             threshold: 0.7
+           cat:
+             threshold: 0.7
+      zona_techo:
+        coordinates: 0,0,0,74,241,43,582,53,735,105,768,245,768,0
+        filters:
+          person:
+            min_area: 400
+            max_area: 5000
+#            min_ratio: 0.5
+#            max_ratio: 1.0
+            min_score: 0.1
+            threshold: 0.4
+          cat:
+            threshold: 0.5
+            min_score: 0.1
+      zona_parrilla:
+        coordinates: 0,432,768,432,768,251,736,106,702,307,557,260,580,57,241,44,0,75
+        filters:
+          person:
+            min_area: 6800
+            max_area: 35000
+            min_score: 0.7
+            threshold: 0.8
+            #min_ratio: 0.5
+            #max_ratio: 1.0
+#          dog:
+#            threshold: 0.8
+          cat:
+            threshold: 0.8
+            max_area: 10000
+
+############
+
+#  porton:
+  #  ffmpeg:
+ #     inputs:
+ #       - path: rtsp://127.0.0.1:8554/patio_sub
+  #        roles:
+  #          - detect
+  #    hwaccel_args:
+  #      -hwaccel vaapi
+  #      -hwaccel_device /dev/dri/renderD128
+  #  motion:
+  #    mask:
+   #      - 0,432,768,432,768,157,695,137,614,123,617,86,698,101,695,126,768,145,768,0,0,0
+   #   contour_area: 70
+  #  birdseye:
+   #   enabled: False 
