@@ -1,0 +1,46 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+# Text to speech
+tts:
+  - platform: google_translate
+    language: es-us
+
+telegram_bot:
+   - platform: polling
+     api_key: 6036122809:AAGBdNjjREvIPNeNzYi4Wh-kq8FQ9seJeYQ
+     allowed_chat_ids:
+      - -940013070
+      - 1948007726
+
+# Example configuration.yaml entry for the notifier
+notify:
+   - platform: telegram
+     name: chat_de_grupo
+     chat_id: -940013070
+   - platform: telegram
+     name: chat_ER
+     chat_id: 1948007726
+
+sensor:
+  - platform: systemmonitor
+    resources:
+      - type: disk_use_percent
+        arg: /config
+      - type: disk_use
+      - type: disk_free
+      - type: memory_use_percent
+      - type: memory_use
+      - type: memory_free
+      - type: processor_use
+      - type: processor_temperature
+      - type: last_boot
+
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
