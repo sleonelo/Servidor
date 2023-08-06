@@ -1,20 +1,20 @@
 mqtt:
-  host: 172.18.0.3
+  host: 172.18.0.2
   topic_prefix: frigate/events
 
-detectors:
-  cpu1:
-    type: cpu
-    num_threads: 4
-  cpu2:
-    type: cpu
-    num_threads: 4
-  cpu3:
-    type: cpu
-    num_threads: 4
-  cpu4:
-    type: cpu
-    num_threads: 4
+# detectors:
+#   cpu1:
+#     type: cpu
+#     num_threads: 4
+#   cpu2:
+#     type: cpu
+#     num_threads: 4
+#   cpu3:
+#     type: cpu
+#     num_threads: 4
+#   cpu4:
+#     type: cpu
+#     num_threads: 4
 
 ffmpeg:
   hwaccel_args: preset-vaapi
@@ -27,14 +27,15 @@ birdseye:
 record:
   enabled: True
   retain:
-    days: 10
+    days: 14
     mode: motion
   events:
-    pre_capture: 10
-    post_capture: 10
+    pre_capture: 7
+    post_capture: 7
     retain:
       default: 14
       mode: active_objects
+    required_zones: [zone_sens,zone_calle,zona_garage,zona_techo,zona_parrilla]
 
 snapshots:
   enabled: True
@@ -43,6 +44,7 @@ snapshots:
   crop: False
   retain:
     default: 20
+  required_zones: [zone_sens,zone_calle,zona_garage,zona_techo,zona_parrilla]
 
 #motion:
   # Optional: The threshold passed to cv2.threshold to determine if a pixel is different enough to be counted as motion. (default: shown below)
@@ -56,7 +58,7 @@ snapshots:
   #  - 15 - high sensitivity
   #  - 30 - medium sensitivity
   #  - 50 - low sensitivity
-#   contour_area: 40
+  # contour_area: 15
   # Optional: Alpha value passed to cv2.accumulateWeighted when averaging the motion delta across multiple frames (default: shown below)
   # Higher values mean the current frame impacts the delta a lot, and a single raindrop may register as motion.
   # Too low and a fast moving person wont be detected as motion.
@@ -76,7 +78,7 @@ snapshots:
   # Optional: improve contrast (default: shown below)
   # Enables dynamic contrast improvement. This should help improve night detections at the cost of making motion detection more sensitive
   # for daytime.
-#   improve_contrast: True
+  # improve_contrast: True
   # Optional: Delay when updating camera motion through MQTT from ON -> OFF (default: shown below).
 #  mqtt_off_delay: 30
 
@@ -86,8 +88,13 @@ detect:
 #  fps: 5
 #  enabled: True
 #  max_disappeared: 25
+  stationary:
+    # Optional: Frequency for confirming stationary objects (default: shown below)
+    # When set to 0, object detection will not confirm stationary objects until movement is detected.
+    # If set to 10, object detection will run to confirm the object still exists on every 10th frame.
+    interval: 5
 
-########
+################
 
 go2rtc:
   streams:
@@ -110,7 +117,7 @@ cameras:
         - path: rtsp://127.0.0.1:8554/entrada_sub?video=copy
           roles:
             - detect
-        - path: rtsp://127.0.0.1:8554/entrada?video=copy
+        - path: rtsp://127.0.0.1:8554/entrada?video=copy&audio=aac
           roles:
             - record
       hwaccel_args:
@@ -123,6 +130,7 @@ cameras:
         - cat
         - dog
         - bicycle
+        - motocycle
 
     motion:
       mask:
@@ -136,13 +144,13 @@ cameras:
            person:
              min_area: 3500
              max_area: 33000
-             threshold: 0.7
+             threshold: 0.5
              min_score: 0.1
            dog:
-             threshold: 0.7
+             threshold: 0.9
              max_area: 25000
            cat:
-             threshold: 0.7
+             threshold: 0.9
              max_area: 5000
        zone_calle:
          coordinates: 487,432,768,432,768,0,287,0
@@ -150,7 +158,7 @@ cameras:
           person:
             max_area: 25000
             threshold: 0.6
-#            min_score: 0.4
+            min_score: 0.4
           dog:
              max_area: 10000
              threshold: 0.8
@@ -167,7 +175,7 @@ cameras:
         - path: rtsp://127.0.0.1:8554/patio_sub?video=copy
           roles:
             - detect
-        - path: rtsp://127.0.0.1:8554/patio?video=copy
+        - path: rtsp://127.0.0.1:8554/patio?video=copy&audio=aac
           roles:
             - record
       hwaccel_args:
@@ -194,11 +202,8 @@ cameras:
              max_area: 7800
              min_ratio: 0.5
              max_ratio: 1.0
-             threshold: 0.4
-           dog:
-             threshold: 0.7
-           cat:
-             threshold: 0.7
+             threshold: 0.75
+
       zona_techo:
         coordinates: 0,0,0,74,241,43,582,53,735,105,768,245,768,0
         filters:
@@ -218,15 +223,15 @@ cameras:
           person:
             min_area: 6800
             max_area: 35000
-            min_score: 0.7
+            min_score: 0.5
             threshold: 0.8
-            #min_ratio: 0.5
-            #max_ratio: 1.0
+            # min_ratio: 0.6
+            # max_ratio: 1.0
 #          dog:
 #            threshold: 0.8
           cat:
-            threshold: 0.8
-            max_area: 10000
+            threshold: 0.92
+            max_area: 90000
 
 ############
 
@@ -244,4 +249,4 @@ cameras:
    #      - 0,432,768,432,768,157,695,137,614,123,617,86,698,101,695,126,768,145,768,0,0,0
    #   contour_area: 70
   #  birdseye:
-   #   enabled: False 
+   #   enabled: False     
