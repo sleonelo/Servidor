@@ -1,0 +1,53 @@
+version: '3.0'
+
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "82:80/tcp"
+    environment:
+      TZ: 'America/Argentina/Mendoza'
+      WEBPASSWORD: 'Silvio34'
+    volumes:
+      - /docker/pihole:/etc/pihole
+      - /etc-dnsmasq.d:/etc/dnsmasq.d
+    restart: unless-stopped
+    network_mode: bridge
+    networks:
+      dns:
+        ipv4_address: 172.20.0.3    
+      
+  unbound:
+    container_name: unbound
+    image: "mvance/unbound:latest"
+    expose:
+      - "53"
+    ports:
+      - target: 53
+        published: 5335
+        protocol: tcp
+        mode: host
+      - target: 53
+        published: 5335
+        protocol: udp
+        mode: host
+    volumes:
+      - /docker/ubconf:/config
+      - /docker/ubconf:/logs
+    restart: unless-stopped
+    networks:
+      dns:
+        ipv4_address: 172.20.0.2
+    network_mode: bridge
+
+networks:
+  dns:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  mydata:
