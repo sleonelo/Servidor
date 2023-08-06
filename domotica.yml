@@ -1,4 +1,3 @@
-
 version: '3'
 services:
   homeassistant:
@@ -10,7 +9,7 @@ services:
     restart: unless-stopped
     privileged: true
     network_mode: host
-##########################################
+
   mqtt:
     container_name: mosquitto
     image: eclipse-mosquitto:1.6
@@ -22,8 +21,9 @@ services:
       - /docker/mosquitto/log:/mqtt/log
       - /docker/mosquitto/data/:/mqtt/data
     restart: unless-stopped
-
-###########################################
+    networks:
+      iot:
+        ipv4_address: 172.18.0.2
 
   frigate:
     container_name: frigate
@@ -47,3 +47,14 @@ services:
     environment: 
       PLUS_API_KEY:
         c08bf441-650a-4afb-a9a0-71e9d66a766a:71c77e62cdb0576a028f5bdf76d83bfcc0fa7665
+    networks:
+      iot:
+        ipv4_address: 172.18.0.3    
+
+networks:
+  iot:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/24
+          gateway: 172.18.0.1
