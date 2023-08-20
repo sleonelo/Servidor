@@ -46,7 +46,7 @@ services:
       - "8555:8555/udp" # WebRTC over udp
     environment: 
       PLUS_API_KEY:
-        c08bf441-650a-4afb-a9a0-71e9d66a766a:71c77e62cdb0576a028f5bdf76d83bfcc0fa7665
+        
     networks:
       iot:
         ipv4_address: 172.18.0.3    
