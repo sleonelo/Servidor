@@ -10,7 +10,7 @@ services:
       - "82:80/tcp"
     environment:
       TZ: 'America/Argentina/Mendoza'
-      WEBPASSWORD: 'Silvio34'
+      WEBPASSWORD: ''
     volumes:
       - /docker/pihole:/etc/pihole
       - /etc-dnsmasq.d:/etc/dnsmasq.d
