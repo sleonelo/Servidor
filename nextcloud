@@ -1,0 +1,33 @@
+version: "2.1"
+services:
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ='America/Argentina/Mendoza'
+    volumes:
+      - /docker/nextcloud/config/:/config
+      - /home/silvio/Escritorio/silvio/_de1/docker/nextcloud/config:/data
+    ports:
+      - 444:443
+    restart: unless-stopped
+
+  mariadb:
+    image: lscr.io/linuxserver/mariadb:latest
+    container_name: mariadb
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ='America/Argentina/Mendoza'
+      - MYSQL_ROOT_PASSWORD=Silvio34
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=Silvio34
+      - REMOTE_SQL=http://URL1/your.sql,https://URL2/your.sql # optional
+    volumes:
+      - /home/silvio/Escritorio/silvio/_de1/docker/nextcloud_db/config:/config
+    ports:
+      - 3306:3306
+    restart: unless-stopped
