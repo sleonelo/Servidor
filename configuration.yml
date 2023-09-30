@@ -12,18 +12,18 @@ tts:
 
 telegram_bot:
    - platform: polling
-     api_key: 6136819824:AAF9xcVKILIO_Wv15SpvIQ1oYdpD5HJYudQ
+     api_key: xxxxxxx
      allowed_chat_ids:
-      -  1948007726
-      -  -940013070
+      -  xxxxx
+      -  -xxxxx
 # Example configuration.yaml entry for the notifier
 notify:
    - platform: telegram
      name: chat_de_grupo
-     chat_id: -940013070
+     chat_id: -xxxx
    - platform: telegram
      name: chat_ER
-     chat_id: 1948007726
+     chat_id: xxxxx
     
 
 sensor:
