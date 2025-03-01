@@ -1,0 +1,77 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+# Text to speech
+tts:
+  - platform: google_translate
+    language: es-us
+
+telegram_bot:
+  - platform: polling
+    api_key: 6036122809:AAGS-JWl1zej7Hx5Ftln-JAzR_Svv98YVI8
+    allowed_chat_ids:
+      - 1948007726
+      - -940013070
+# Example configuration.yaml entry for the notifier
+notify:
+  - platform: telegram
+    name: chat_de_grupo
+    chat_id: -940013070
+  - platform: telegram
+    name: chat_ER
+    chat_id: 1948007726
+
+mqtt:
+  sensor:
+    - name: "Temperatura test"
+      state_topic: "home/mqttest/temperatura"
+      unit_of_measurement: "°C"
+      icon: mdi:thermometer
+    - name: "Humedad test"
+      state_topic: "home/mqttest/humedad"
+      unit_of_measurement: "%"
+      icon: mdi:water-percent
+input_number:
+  ac_temperature:
+    name: Temperatura AC
+    min: 17
+    max: 29
+    step: 1
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer
+
+  ac_temperature1:
+    name: Velocidad AC
+    min: 1
+    max: 3
+    step: 1
+    unit_of_measurement: "Vel"
+    icon: mdi:fan
+
+input_boolean:
+  aire0:
+    name: aire en frio
+    initial: off
+    icon: mdi:snowflake
+
+  aire1:
+    name: aire en ventilacion
+    initial: off
+    icon: mdi:fan
+
+  aire2:
+    name: aire en deshumidificador
+    initial: off
+    icon: mdi:cloud-percent
+
+  aire3:
+    name: aire en calor
+    initial: off
+    icon: mdi:fire
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+template: !include template.yaml
