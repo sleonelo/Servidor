@@ -1,0 +1,33 @@
+- sensor:
+    - name: "Consumo actual"
+      unit_of_measurement: "kW"
+      state: >
+        {{ (states('sensor.breaker_phase_a_power') | float(0) * 1.127) | round(3) }}
+
+- sensor:
+    - name: "Consumo mensual"
+      unit_of_measurement: "kWh"
+      state: >
+        {% set energia_total = states('sensor.breaker_total_energy') | float(0) %}
+        {% set factor_conversion = 1.127 %}
+        {% set ajustes = 315.55 + 299.74 + 484.61 + 475.72 %}
+        {{ ((energia_total * factor_conversion)) | round(2) }}
+#        {{ ((energia_total * factor_conversion) - ajustes) | round(2) }}
+- sensor:
+    - name: "Medidor"
+      unit_of_measurement: "kWh"
+      state: >
+        {{ ((states('sensor.breaker_total_energy') | float(0) * 1.127) + 93762.39 + 1692.26) | round(2) }}
+
+- sensor:
+    - name: "Nivel de CO₂"
+      unit_of_measurement: "ppm"
+      state: >
+        {{ (116.6020682 * ((states('sensor.sensortablet_voltage') | float(0) / 5) ** -2.769)) | round(2) }}
+
+# - sensor:
+#     - name: "Calidad del aire"
+#       unit_of_measurement: "ppm"
+#       state: >
+#         {{ ((states('sensor.sensortablet_voltaje') | float(0) / 5) ** -1.5 * 116.6020682) | round(2) }}
+
