@@ -1,0 +1,43 @@
+services:
+  frigate:
+    container_name: frigate
+    privileged: true # esto puede no ser necesario en todos los casos
+    restart: unless-stopped
+    stop_grace_period: 30s # permitir suficiente tiempo para apagar los servicios
+    image: ghcr.io/blakeblackshear/frigate:stable-tensorrt
+    shm_size: "512mb" # actualiza según tus cámaras
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128 # Para aceleración de hardware de Intel
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - D:/docker/frigate_config:/config
+      - D:/docker/frigate_storage:/media/frigate
+      - type: tmpfs # Opcional: 1GB de memoria, reduce el desgaste del SSD/SD Card
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+#      - D:/docker/frigate_config:/config  # Monta el volumen a la carpeta que quieres
+#      - D:/docker/frigate_storage:/media/frigate  # Almacenamiento de medios en D:\docker
+    ports:
+      - "8971:8971"
+      - "5001:5000" # Acceso interno no autenticado. Exponer cuidadosamente.
+      - "8554:8554" # Feeds RTSP
+      - "8555:8555/tcp" # WebRTC por TCP
+      - "8555:8555/udp" # WebRTC por UDP
+      - "1984:1984"
+
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0'] # this is only needed when using multiple GPUs
+              capabilities: [gpu]
+
+    environment:
+      #- FRIGATE_RTSP_PASSWORD='XXXX
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+      - NVIDIA_VISIBLE_DEVICES=all
+      - YOLO_MODELS=yolov7-320,yolov7x-640,yolov4-tiny-288,yolov4-tiny-416,yolov4x-mish-320,yolov4x-mish-640,yolov7-tiny-288,yolov7-tiny-416
+      - USE_FP16=false
