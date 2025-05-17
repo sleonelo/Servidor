@@ -1,60 +1,98 @@
-version: '3'
-services:
-  homeassistant:
-    container_name: homeassistant
-    image: "ghcr.io/home-assistant/home-assistant:stable"
-    volumes:
-      - /docker/homeassistant:/config
-      - /etc/localtime:/etc/localtime:ro
-    restart: unless-stopped
-    privileged: true
-    network_mode: host
+version: '3.9'
 
-  mqtt:
-    container_name: mosquitto
-    image: eclipse-mosquitto:1.6
-    ports:
-      - "1883:1883"
-      - "9001:9001"
+services:
+  esphome:
+    container_name: esphome
+    image: ghcr.io/esphome/esphome
     volumes:
-      - /docker/mosquitto/config:/mqtt/config
-      - /docker/mosquitto/log:/mqtt/log
-      - /docker/mosquitto/data/:/mqtt/data
+      - /docker/esphome/config:/config  # Configuraciones de ESPHome
+      - /etc/localtime:/etc/localtime:ro  # Sincronizar zona horaria
     restart: unless-stopped
     networks:
-      iot:
-        ipv4_address: 172.18.0.2
+      smart_home:
+        ipv4_address: 172.22.0.2  # IP estática asignada
+    environment:
+      - USERNAME=admin  # Credenciales de acceso
+      - PASSWORD=pas
 
+  # Servicio de videovigilancia NVR
   frigate:
     container_name: frigate
+    image: ghcr.io/blakeblackshear/frigate:0.16.0-beta1
     privileged: true # this may not be necessary for all setups
     restart: unless-stopped
-    image: ghcr.io/blakeblackshear/frigate:stable
-    shm_size: "128mb" # update for your cameras based on calculation above
+    networks:
+      smart_home:
+        ipv4_address: 172.22.0.3
+    shm_size: "512mb"  # Memoria compartida para procesamiento de video
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /docker/frigate/config.yml:/config/config.yml
-      - /media/frigate:/media/frigate
-      - type: tmpfs # Optional: 1GB of memory, reduces SSD/SD Card wear
+      - /docker/frigate/config.yml:/config/config.yml  # Archivo de configuración
+      - /docker/frigate_db:/media/frigate  # Almacenamiento de grabaciones
+      - type: tmpfs  # Cache en memoria para reducir escritura en disco
         target: /tmp/cache
         tmpfs:
-          size: 1000000000
+          size: 500000000  # 500MB de cache temporal
     ports:
-      - "5001:5000"
-      - "8554:8554" # RTSP feeds
-      - "8555:8555/tcp" # WebRTC over tcp
-      - "8555:8555/udp" # WebRTC over udp
+      - "8972:8971"  # Puerto de la API
+      - "5002:5000"  # Interfaz web
+      - "8556:8554"  # RTSP feeds
+      - "8557:8555/tcp" # WebRTC sobre TCP
+      - "8557:8555/udp" # WebRTC sobre UDP
+      - "1984:1984"  # go2rtc
     environment: 
-      PLUS_API_KEY:
-        
-    networks:
-      iot:
-        ipv4_address: 172.18.0.3    
+      LIBVA_DRIVER_NAME: i965  # Aceleración por hardware para Intel
 
+  # Sistema central de domótica
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    volumes:
+      - /docker/homeassistant:/config  # Configuración persistente
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    networks:
+      smart_home:
+        ipv4_address: 172.22.0.4
+    depends_on:
+      - mqtt  # Requiere MQTT para iniciar
+
+  # Broker MQTT para comunicación IoT
+  mqtt:
+    container_name: mosquitto1
+    image: eclipse-mosquitto:1.6
+    restart: unless-stopped
+    networks:
+      smart_home:
+        ipv4_address: 172.22.0.5
+    ports:
+      - "1883:1883"  # Puerto MQTT estándar
+      - "9001:9001"  # Websocket para MQTT
+    volumes:
+      - /docker/mosquitto/config:/mqtt/config  # Configuración Mosquitto
+      - /docker/mosquitto/log:/mqtt/log  # Registros del servicio
+      - /docker/mosquitto/data:/mqtt/data  # Datos persistentes
+
+  # Entorno de desarrollo VS Code en navegador
+  code-server:
+    container_name: code-server
+    image: codercom/code-server:latest
+    restart: unless-stopped
+    networks:
+      smart_home:
+        ipv4_address: 172.22.0.6
+    ports:
+      - "8443:8443"  # Puerto de acceso web
+    environment:
+      - PASSWORD=Silvio34  # Contraseña de acceso
+    volumes:
+      - /docker/code-server:/home/coder/project  # Proyectos persistentes
+
+# Configuración de red personalizada
 networks:
-  iot:
+  smart_home:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.18.0.0/24
-          gateway: 172.18.0.1
+        - subnet: 172.22.0.0/24  # Red a 172.22.0.x
+          gateway: 172.22.0.1
