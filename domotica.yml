@@ -8,22 +8,16 @@ services:
       - /docker/esphome/config:/config  # Configuraciones de ESPHome
       - /etc/localtime:/etc/localtime:ro  # Sincronizar zona horaria
     restart: unless-stopped
-    networks:
-      smart_home:
-        ipv4_address: 172.22.0.2  # IP estática asignada
     environment:
-      - USERNAME=admin  # Credenciales de acceso
-      - PASSWORD=pas
+      - USERNAME=usuario  # Credenciales de acceso
+      - PASSWORD=Password
 
   # Servicio de videovigilancia NVR
   frigate:
     container_name: frigate
-    image: ghcr.io/blakeblackshear/frigate:0.16.0-beta1
+    image: ghcr.io/blakeblackshear/frigate:0.16.0-beta2
     privileged: true # this may not be necessary for all setups
     restart: unless-stopped
-    networks:
-      smart_home:
-        ipv4_address: 172.22.0.3
     shm_size: "512mb"  # Memoria compartida para procesamiento de video
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -35,36 +29,32 @@ services:
           size: 500000000  # 500MB de cache temporal
     ports:
       - "8972:8971"  # Puerto de la API
-      - "5002:5000"  # Interfaz web
-      - "8556:8554"  # RTSP feeds
-      - "8557:8555/tcp" # WebRTC sobre TCP
-      - "8557:8555/udp" # WebRTC sobre UDP
+      - "5000:5000"  # Interfaz web
+      - "8554:8554"  # RTSP feeds
+      - "8555:8555/tcp" # WebRTC sobre TCP
+      - "8555:8555/udp" # WebRTC sobre UDP
       - "1984:1984"  # go2rtc
     environment: 
       LIBVA_DRIVER_NAME: i965  # Aceleración por hardware para Intel
 
   # Sistema central de domótica
+
   homeassistant:
     container_name: homeassistant
-    image: ghcr.io/home-assistant/home-assistant:stable
+    image: "ghcr.io/home-assistant/home-assistant:stable"
     volumes:
-      - /docker/homeassistant:/config  # Configuración persistente
+      - /docker/homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
-    networks:
-      smart_home:
-        ipv4_address: 172.22.0.4
-    depends_on:
-      - mqtt  # Requiere MQTT para iniciar
+    privileged: true
+    network_mode: host
+
 
   # Broker MQTT para comunicación IoT
   mqtt:
     container_name: mosquitto1
-    image: eclipse-mosquitto:1.6
+    image: eclipse-mosquitto:2.0
     restart: unless-stopped
-    networks:
-      smart_home:
-        ipv4_address: 172.22.0.5
     ports:
       - "1883:1883"  # Puerto MQTT estándar
       - "9001:9001"  # Websocket para MQTT
@@ -72,27 +62,3 @@ services:
       - /docker/mosquitto/config:/mqtt/config  # Configuración Mosquitto
       - /docker/mosquitto/log:/mqtt/log  # Registros del servicio
       - /docker/mosquitto/data:/mqtt/data  # Datos persistentes
-
-  # Entorno de desarrollo VS Code en navegador
-  code-server:
-    container_name: code-server
-    image: codercom/code-server:latest
-    restart: unless-stopped
-    networks:
-      smart_home:
-        ipv4_address: 172.22.0.6
-    ports:
-      - "8443:8443"  # Puerto de acceso web
-    environment:
-      - PASSWORD=Silvio34  # Contraseña de acceso
-    volumes:
-      - /docker/code-server:/home/coder/project  # Proyectos persistentes
-
-# Configuración de red personalizada
-networks:
-  smart_home:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.22.0.0/24  # Red a 172.22.0.x
-          gateway: 172.22.0.1
