@@ -1,0 +1,487 @@
+mqtt:
+  enabled: true
+  host: 10.0.1.110
+  topic_prefix: frigate/events
+  user: mqtt
+  password: Silvio34
+
+detectors:
+  # coral_usb:
+  #   type: edgetpu
+  #   device: usb
+  coral_pci:
+    type: edgetpu
+    device: pci
+
+#ffmpeg:
+ # hwaccel_args: preset-vaapi
+
+ffmpeg:
+  input_args:
+    - -avoid_negative_ts
+    - make_zero
+  output_args:
+    record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 
+      -strftime 1 -c:v copy -c:a aac
+  hwaccel_args:
+    - -hwaccel
+    - vaapi
+    - -hwaccel_device
+    - /dev/dri/renderD128
+    - -hwaccel_output_format
+    - yuv420p
+
+#model:
+#   path: "/gray_cctv3_340x340_edgetpu.tflite"
+#   width: 340
+#   height: 340   
+#  path: /efficientdet_lite3_512_ptq_edgetpu.tflite
+#  width: 512
+#  height: 512
+#  path: /efficientdet_lite3_512_ptq_edgetpu.tflite
+  # path: /media/models/tf2_ssd_mobilenet_v2_coco17_ptq_edgetpu.tflite
+  # width: 300
+  # height: 300
+
+
+record:
+  enabled: true
+  retain:
+    days: 18
+    mode: all
+  alerts:
+    retain:
+      days: 50
+      mode: motion
+    pre_capture: 7
+    post_capture: 4
+  detections:
+    retain:
+      days: 50
+      mode: motion
+    pre_capture: 7
+    post_capture: 4
+  export:
+    timelapse_args: -vf setpts=0.15*PTS -r 30
+  preview:
+    quality: very_high
+
+
+
+snapshots:
+  enabled: true
+  #timestamp: false
+  bounding_box: true
+  crop: false
+  #height: 175
+  retain:
+    default: 60
+  required_zones: [zone_sens, zone_calle, zona_techo, zona_parrilla, zona_bajoCocina, zona_altoFondo]
+  quality: 100
+
+detect:
+  #width: 1920
+  #height: 1080
+  fps: 10
+  enabled: true
+  #min_initialized: 2
+  #max_disappeared: 5
+  stationary:
+     # Optional: Frequency for confirming stationary objects (default: shown below)
+     # When set to 0, object detection will not confirm stationary objects until movement is detected.
+     # If set to 10, object detection will run to confirm the object still exists on every 10th frame.
+    interval: 5
+
+objects:
+  # Optional: list of objects to track from labelmap.txt (default: shown below)
+  track:
+    - person
+    - cat
+    - dog
+    - bicycle
+    - motorcycle
+
+################
+
+go2rtc:
+  streams:
+    entrada:
+      - rtsp://admin:YVWMOA@10.0.1.101:554/Streaming/Channels/101
+    entrada_sub:
+      - rtsp://admin:YVWMOA@10.0.1.101:554/Streaming/Channels/102
+    patio:
+      - rtsp://admin:JHAQOG@10.0.1.102:554/Streaming/Channels/101
+    patio_sub:
+      - rtsp://admin:JHAQOG@10.0.1.102:554/Streaming/Channels/102
+    cocina:
+      - rtsp://admin:BYJONS@10.0.1.103:554/Streaming/Channels/101
+    cocina_sub:
+      - rtsp://admin:BYJONS@10.0.1.103:554/Streaming/Channels/102
+    comedor:
+      - rtsp://admin:KXPQEF@10.0.1.104:554/Streaming/Channels/101
+    comedor_sub:
+      - rtsp://admin:KXPQEF@10.0.1.104:554/Streaming/Channels/102
+    monitor:
+      - rtsp://admin:ACZLKQ@10.0.1.105:554/Streaming/Channels/101
+    monitor_sub:
+      - rtsp://admin:ACZLKQ@10.0.1.105:554/Streaming/Channels/102
+################
+
+cameras:
+
+########################
+  entrada:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/entrada
+          roles:
+            - detect
+            - record
+
+    best_image_timeout: 120
+
+    zones:
+      zone_sens:
+        coordinates: 0,1,0.633,1,0.406,0.122,0.333,0.043,0.331,0,0,0
+        filters:
+          person:
+            min_area: 26500
+            #max_area: 10500
+            #min_score: 0.
+            threshold: 0.5
+            min_ratio: 0.5
+            max_ratio: 0.9
+          dog:
+            min_area: 20000
+            max_area: 200000
+            min_score: 0.3
+            threshold: 0.5
+            #min_ratio: 0.7
+            #max_ratio:              
+          cat:
+            #min_area: 0
+            max_area: 27000
+            min_score: 0.3
+            threshold: 0.5
+            #min_ratio: 0.7
+            #max_ratio: 2.0  
+        inertia: 1
+        loitering_time: 0
+        objects:
+          - cat
+          - dog
+          - person
+      zone_vereda:
+        coordinates: 0.634,1,1,1,1,0.84,0.811,0.497,0.517,0.11,0.404,0.114
+        filters:
+          person:
+            #min_area: 0
+            #max_area: 200000
+            min_score: 0.5
+            threshold: 0.65
+            #min_ratio: 0.7
+            #max_ratio: 0.85
+          dog:
+            #min_area: 0
+            #max_area: 20000
+            min_score: 0.4
+            threshold: 0.5
+            #min_ratio: 0.7
+            #max_ratio: 2.0            
+          cat:
+            #min_area: 0
+            #max_area: 20000
+            min_score: 0.4
+            threshold: 0.5
+            #min_ratio: 0.7
+            #max_ratio: 2.0         
+        inertia: 2
+        loitering_time: 0
+
+      zone_calle:
+        coordinates: 1,0.834,0.815,0.507,0.801,0.47,0.493,0.074,0.438,0,1,0
+        filters:
+          person:
+            min_area: 3000
+           #max_area: 32000
+           #min_score: 0.5
+            threshold: 0.6
+            #min_ratio: 0.7
+            #max_ratio: 0.8
+          dog:
+            #min_area: 0
+            #max_area: 20000
+            min_score: 0.3
+            threshold: 0.4
+            #min_ratio: 0.7
+            #max_ratio: 2.0          
+          cat:
+            #min_area: 0
+            #max_area: 20000
+            min_score: 0.3
+            threshold: 0.4
+            #min_ratio: 0.7
+            #max_ratio: 2.0
+          motorcycle:
+            threshold: 0.4
+            max_area: 117000
+
+        loitering_time: 0
+        inertia: 2
+
+    motion:
+      threshold: 20
+      contour_area: 15
+      improve_contrast: true
+
+      mask: 0.23,0.934,0.233,0.984,0.288,0.984,0.285,0.934
+    review:
+      alerts:
+        labels:
+          - dog
+          - cat
+          - person
+        required_zones: zone_sens
+
+      detections:
+        labels:
+          - dog
+          - cat
+          - person
+          - bicycle
+          - motorcycle
+        required_zones:
+          - zone_calle
+          - zone_vereda
+
+######################
+
+  patio:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/patio
+          roles:
+            - detect
+            - record
+
+    objects:
+      track:
+        - person
+        - cat
+
+    zones:
+      zona_garage:
+        coordinates: 0.788,0.468,0.898,0.516,0.922,0.241,0.81,0.209
+        filters:
+          person:
+          #  min_area: 2400
+          #  max_area: 100000
+            #min_score: 0.2
+            threshold: 0.8
+           #min_ratio:
+            max_ratio: 0.8
+          #dog:
+            #min_area: 0
+            #max_area: 20000
+            #min_score: 0.4
+            #threshold: 0.75
+            #min_ratio: 0.7
+            #max_ratio: 2.0             
+          cat:
+            #min_area: 0
+            max_area: 14400
+            #min_score: 0.4
+            #threshold: 0.75          
+            #min_ratio: 0.7
+            #max_ratio: 2.0
+
+        inertia: 4
+        loitering_time: 0
+
+        objects: person
+
+      zona_techo:
+        coordinates: 
+          0,0.141,0.277,0.114,0.462,0.088,0.741,0.126,0.812,0.166,0.812,0.202,0.917,0.235,0.935,0.365,1,0.709,1,0.048,0.516,0,0,0
+        filters:
+          person:
+            min_area: 1200
+            #max_area: 2000
+            #min_score: 0.3
+            threshold: 0.6
+            #min_ratio: 0.33
+            #max_ratio: 0.7          
+          #dog:
+            #min_area: 0
+            #max_area: 20000
+            #min_score: 0.4
+            #threshold: 0.75 
+            #min_ratio: 0.7
+            #max_ratio: 2.0
+          cat:
+            #min_area: 0
+            #max_area: 20000
+            min_score: 0.3
+            threshold: 0.5
+            #min_ratio: 0.7
+            #max_ratio: 2.0
+
+        objects:
+          - person
+          - cat
+        inertia: 1
+        loitering_time: 0
+
+      zona_parrilla:
+        coordinates: 
+          0,1,1,1,1,0.728,0.937,0.378,0.923,0.249,0.896,0.519,0.786,0.476,0.811,0.168,0.743,0.129,0.467,0.097,0.284,0.114,0,0.147
+        filters:
+          person:
+            min_area: 30000
+           #max_area: 20000
+           #min_score: 0.5
+            threshold: 0.77
+            #min_ratio: 0.7
+            max_ratio: 0.73
+          #dog:
+            #min_area: 0
+            #max_area: 20000
+            #min_score: 0.4
+            #threshold: 0.75
+            #min_ratio: 0.7
+            #max_ratio: 2.0             
+          cat:
+            #min_area: 0
+            max_area: 9000
+            #min_score: 0.4
+            #threshold: 0.75
+            #min_ratio: 0.7
+
+        objects: person
+
+        inertia: 4
+        loitering_time: 1
+
+    review:
+      alerts:
+        required_zones: zona_techo
+
+      detections:
+        required_zones: zona_parrilla
+    motion:
+      threshold: 20
+      contour_area: 15
+      improve_contrast: 'true'
+########################
+
+  cocina:
+    ffmpeg:
+      hwaccel_args: []
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cocina
+          roles:
+            - detect
+            - record
+
+    objects:
+      track:
+        - person
+
+    record:
+      enabled: true
+      retain:
+        days: 5
+        mode: motion
+
+    zones:
+
+      zona_bajoCocina:
+        coordinates: 0,0.219,1,0.179,1,1,0,1
+        loitering_time: 0
+        filters:
+          person:
+            min_area: 31000
+#            max_area: 35000
+            #min_score: 0.5
+            threshold: 0.7
+            # min_ratio: 0.6
+            max_ratio: 0.73
+
+        objects: person
+
+      zona_altoFondo:
+        coordinates: 0.703,0.028,0.695,0.188,0.929,0.177,0.926,0.113,0.881,0.022
+        #filters:
+          #person:
+            #min_area: 31000
+#            max_area: 35000
+            #min_score: 0.5
+#            threshold: 0.8
+            # min_ratio: 0.6
+            # max_ratio: 1.0     
+        loitering_time: 0
+
+        objects: person
+
+    review:
+      alerts:
+        required_zones: zona_altoFondo
+
+      detections:
+        required_zones: zona_bajoCocina
+################################
+  comedor:
+    ffmpeg:
+      hwaccel_args: []
+      inputs:
+        - path: rtsp://127.0.0.1:8554/comedor
+          roles:
+            - detect
+            - record
+
+    record:
+      enabled: true
+      retain:
+        days: 2
+        mode: all
+
+    detect:
+      enabled: false
+################################
+  monitor:
+    ffmpeg:
+      hwaccel_args: []
+      inputs:
+        - path: rtsp://127.0.0.1:8554/monitor
+          roles:
+            - detect
+            - record
+
+    record:
+      enabled: false
+
+    detect:
+      enabled: false
+
+################################
+
+version: 0.16-0
+camera_groups:
+  ER1722:
+    order: 1
+    icon: LuWebcam
+    cameras:
+      - entrada
+      - patio
+      - cocina
+semantic_search:
+  enabled: true
+  model_size: large
+face_recognition:
+  enabled: true
+  model_size: small
+lpr:
+  enabled: false
+classification:
+  bird:
+    enabled: false
