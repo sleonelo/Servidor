@@ -12,9 +12,17 @@ detectors:
   coral_pci:
     type: edgetpu
     device: pci
-
-#ffmpeg:
- # hwaccel_args: preset-vaapi
+#model:
+#   path: "/gray_cctv3_340x340_edgetpu.tflite"
+#   width: 340
+#   height: 340   
+#  path: /efficientdet_lite3_512_ptq_edgetpu.tflite
+#  width: 512
+#  height: 512
+#  path: /efficientdet_lite3_512_ptq_edgetpu.tflite
+  # path: /media/models/tf2_ssd_mobilenet_v2_coco17_ptq_edgetpu.tflite
+  # width: 300
+  # height: 300
 
 ffmpeg:
   input_args:
@@ -31,42 +39,27 @@ ffmpeg:
     - -hwaccel_output_format
     - yuv420p
 
-#model:
-#   path: "/gray_cctv3_340x340_edgetpu.tflite"
-#   width: 340
-#   height: 340   
-#  path: /efficientdet_lite3_512_ptq_edgetpu.tflite
-#  width: 512
-#  height: 512
-#  path: /efficientdet_lite3_512_ptq_edgetpu.tflite
-  # path: /media/models/tf2_ssd_mobilenet_v2_coco17_ptq_edgetpu.tflite
-  # width: 300
-  # height: 300
-
-
 record:
   enabled: true
   retain:
-    days: 18
+    days: 5
     mode: all
   alerts:
     retain:
-      days: 50
+      days: 45
       mode: motion
-    pre_capture: 7
-    post_capture: 4
+    pre_capture: 5
+    post_capture: 6
   detections:
     retain:
-      days: 50
+      days: 45
       mode: motion
-    pre_capture: 7
-    post_capture: 4
+    pre_capture: 5
+    post_capture: 6
   export:
     timelapse_args: -vf setpts=0.15*PTS -r 30
   preview:
     quality: very_high
-
-
 
 snapshots:
   enabled: true
@@ -76,7 +69,8 @@ snapshots:
   #height: 175
   retain:
     default: 60
-  required_zones: [zone_sens, zone_calle, zona_techo, zona_parrilla, zona_bajoCocina, zona_altoFondo]
+  required_zones: [zone_sens, zone_calle, zona_techo, zona_parrilla, 
+        zona_bajoCocina, zona_altoFondo]
   quality: 100
 
 detect:
@@ -90,7 +84,7 @@ detect:
      # Optional: Frequency for confirming stationary objects (default: shown below)
      # When set to 0, object detection will not confirm stationary objects until movement is detected.
      # If set to 10, object detection will run to confirm the object still exists on every 10th frame.
-    interval: 5
+    interval: 3
 
 objects:
   # Optional: list of objects to track from labelmap.txt (default: shown below)
@@ -105,10 +99,15 @@ objects:
 
 go2rtc:
   streams:
-    entrada:
+    entrada_sur:
       - rtsp://admin:YVWMOA@10.0.1.101:554/Streaming/Channels/101
-    entrada_sub:
+    entrada_sur_sub:
       - rtsp://admin:YVWMOA@10.0.1.101:554/Streaming/Channels/102
+    entrada:
+      - rtsp://admin:Silvio34@10.0.1.106:554/Streaming/Channels/101
+      # - "ffmpeg:back#video=h264#audio=aac#hardware"
+    entrada_sub:
+      - rtsp://admin:Silvio34@10.0.1.106:554/Streaming/Channels/102
     patio:
       - rtsp://admin:JHAQOG@10.0.1.102:554/Streaming/Channels/101
     patio_sub:
@@ -125,6 +124,7 @@ go2rtc:
       - rtsp://admin:ACZLKQ@10.0.1.105:554/Streaming/Channels/101
     monitor_sub:
       - rtsp://admin:ACZLKQ@10.0.1.105:554/Streaming/Channels/102
+
 ################
 
 cameras:
@@ -136,13 +136,18 @@ cameras:
         - path: rtsp://127.0.0.1:8554/entrada
           roles:
             - detect
+        - path: rtsp://127.0.0.1:8554/entrada
+          roles:
             - record
 
-    best_image_timeout: 120
-
+    # detect:
+    #   width: 3200
+    #   height: 1800
+    best_image_timeout: 40
     zones:
       zone_sens:
-        coordinates: 0,1,0.633,1,0.406,0.122,0.333,0.043,0.331,0,0,0
+        coordinates: 
+          0,1,0.645,1,0.528,0.639,0.375,0.209,0.363,0.15,0.349,0.124,0.25,0.142,0.245,0,0,0
         filters:
           person:
             min_area: 26500
@@ -172,7 +177,8 @@ cameras:
           - dog
           - person
       zone_vereda:
-        coordinates: 0.634,1,1,1,1,0.84,0.811,0.497,0.517,0.11,0.404,0.114
+        coordinates: 
+          0.648,1,1,1,1,0.84,0.81,0.488,0.492,0.135,0.472,0.118,0.442,0.118,0.355,0.112,0.376,0.205
         filters:
           person:
             #min_area: 0
@@ -199,7 +205,7 @@ cameras:
         loitering_time: 0
 
       zone_calle:
-        coordinates: 1,0.834,0.815,0.507,0.801,0.47,0.493,0.074,0.438,0,1,0
+        coordinates: 1,0.834,0.811,0.49,0.492,0.13,0.341,0,1,0
         filters:
           person:
             min_area: 3000
@@ -224,17 +230,17 @@ cameras:
             #max_ratio: 2.0
           motorcycle:
             threshold: 0.4
-            max_area: 117000
+            #max_area: 117000
 
         loitering_time: 0
         inertia: 2
 
     motion:
       threshold: 20
-      contour_area: 15
+      contour_area: 10
       improve_contrast: true
 
-      mask: 0.23,0.934,0.233,0.984,0.288,0.984,0.285,0.934
+      mask: 0.216,0.084,0.124,0.087,0.122,0.05,0.208,0.048
     review:
       alerts:
         labels:
@@ -296,7 +302,7 @@ cameras:
             #max_ratio: 2.0
 
         inertia: 4
-        loitering_time: 0
+        loitering_time: 1
 
         objects: person
 
@@ -305,10 +311,10 @@ cameras:
           0,0.141,0.277,0.114,0.462,0.088,0.741,0.126,0.812,0.166,0.812,0.202,0.917,0.235,0.935,0.365,1,0.709,1,0.048,0.516,0,0,0
         filters:
           person:
-            min_area: 1200
+            min_area: 1700
             #max_area: 2000
             #min_score: 0.3
-            threshold: 0.6
+            threshold: 0.4
             #min_ratio: 0.33
             #max_ratio: 0.7          
           #dog:
@@ -329,7 +335,7 @@ cameras:
         objects:
           - person
           - cat
-        inertia: 1
+        inertia: 2
         loitering_time: 0
 
       zona_parrilla:
@@ -376,13 +382,12 @@ cameras:
 
   cocina:
     ffmpeg:
-      hwaccel_args: []
+  #    hwaccel_args: []
       inputs:
         - path: rtsp://127.0.0.1:8554/cocina
           roles:
             - detect
             - record
-
     objects:
       track:
         - person
@@ -432,12 +437,19 @@ cameras:
 ################################
   comedor:
     ffmpeg:
-      hwaccel_args: []
       inputs:
         - path: rtsp://127.0.0.1:8554/comedor
           roles:
             - detect
             - record
+          global_args: -hide_banner -loglevel info -rtsp_transport tcp
+          input_args: -analyzeduration 10000000 -probesize 5000000 -fflags 
+            +genpts -avoid_negative_ts make_zero
+      hwaccel_args: []
+      output_args:
+        detect: -f rawvideo -pix_fmt yuv420p
+        record: -f segment -segment_time 10 -segment_format mp4 
+          -reset_timestamps 1 -strftime 1 -c:v copy -c:a aac
 
     record:
       enabled: true
@@ -447,21 +459,45 @@ cameras:
 
     detect:
       enabled: false
+
 ################################
   monitor:
     ffmpeg:
-      hwaccel_args: []
       inputs:
         - path: rtsp://127.0.0.1:8554/monitor
           roles:
             - detect
             - record
+          global_args: -hide_banner -loglevel info -rtsp_transport tcp
+          input_args: -analyzeduration 10000000 -probesize 5000000 -fflags 
+            +genpts -avoid_negative_ts make_zero
+      hwaccel_args: []  # desactivamos VAAPI para evitar crashes
+      output_args:
+        detect: -f rawvideo -pix_fmt yuv420p
+        record: -f segment -segment_time 10 -segment_format mp4 
+          -reset_timestamps 1 -strftime 1 -c:v copy -c:a aac
 
     record:
       enabled: false
 
     detect:
       enabled: false
+
+################################
+  entrada1:
+    ffmpeg:
+      hwaccel_args: preset-vaapi
+      inputs:
+        - path: rtsp://127.0.0.1:8554/entrada1
+          roles:
+            - detect
+            - record
+    record:
+      enabled: false
+
+    detect:
+      enabled: false
+    enabled: false
 
 ################################
 
@@ -471,6 +507,7 @@ camera_groups:
     order: 1
     icon: LuWebcam
     cameras:
+      - entrada1
       - entrada
       - patio
       - cocina
@@ -481,7 +518,7 @@ face_recognition:
   enabled: true
   model_size: small
 lpr:
-  enabled: false
+  enabled: true
 classification:
   bird:
     enabled: false
